@@ -1,31 +1,40 @@
-import '../wallet/wallet_kit_exception.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:meta/meta.dart';
+
 import 'wallet_storage.dart';
 
 class SecureWalletStorage implements WalletStorage {
-  const SecureWalletStorage();
+  static const String defaultMnemonicKey = 'bdk_wallet_kit.mnemonic';
 
-  Never _notConfigured() {
-    // TODO: Wire this to a platform secure-storage implementation, such as
-    // flutter_secure_storage, once this package is ready to take a Flutter
-    // dependency or expose a separate Flutter adapter package.
-    //
-    // This toolkit should own app-level storage patterns. It should not own
-    // BDK wallet internals, descriptor persistence, or database formats.
-    throw const WalletKitException(
-      'SecureWalletStorage is not configured yet. Provide a WalletStorage '
-      'implementation or use MemoryWalletStorage for tests.',
-    );
+  final FlutterSecureStorage secureStorage;
+  final String mnemonicKey;
+
+  const SecureWalletStorage({
+    this.secureStorage = const FlutterSecureStorage(),
+    this.mnemonicKey = defaultMnemonicKey,
+  });
+
+  @visibleForTesting
+  String get key => mnemonicKey;
+
+  @override
+  Future<void> saveMnemonic(String mnemonic) {
+    return secureStorage.write(key: mnemonicKey, value: mnemonic);
   }
 
   @override
-  Future<void> saveMnemonic(String mnemonic) async => _notConfigured();
+  Future<String?> readMnemonic() {
+    return secureStorage.read(key: mnemonicKey);
+  }
 
   @override
-  Future<String?> readMnemonic() async => _notConfigured();
+  Future<void> deleteMnemonic() {
+    return secureStorage.delete(key: mnemonicKey);
+  }
 
   @override
-  Future<void> deleteMnemonic() async => _notConfigured();
-
-  @override
-  Future<bool> hasMnemonic() async => _notConfigured();
+  Future<bool> hasMnemonic() async {
+    final mnemonic = await readMnemonic();
+    return mnemonic != null && mnemonic.isNotEmpty;
+  }
 }

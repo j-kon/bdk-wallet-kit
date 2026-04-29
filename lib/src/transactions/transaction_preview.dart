@@ -12,7 +12,7 @@ class TransactionPreview {
     required this.recipientAddress,
     required this.amountSats,
     required this.estimatedFeeSats,
-    int? totalSats,
+    required this.totalSats,
     required this.feeRatePreset,
     this.changeAddress,
   })  : assert(amountSats >= 0, 'amountSats must be non-negative'),
@@ -20,5 +20,5 @@ class TransactionPreview {
           estimatedFeeSats >= 0,
           'estimatedFeeSats must be non-negative',
         ),
-        totalSats = totalSats ?? amountSats + estimatedFeeSats;
+        assert(totalSats >= 0, 'totalSats must be non-negative');
 }

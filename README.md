@@ -1,93 +1,146 @@
 # bdk_wallet_kit
 
-`bdk_wallet_kit` is a companion toolkit for Flutter developers building Bitcoin wallet apps with BDK. It provides app-level helpers and reusable patterns around wallet setup, storage, sync state, transaction preview, and onboarding.
+A Flutter-first companion toolkit built on top of `bdk-dart` for developers building Bitcoin wallet apps with BDK.
 
-It does not replace `bdk-dart` or `bdk_flutter`. Advanced wallet operations should still use the official BDK bindings directly.
-
-## Why This Exists
-
-BDK gives Dart and Flutter developers access to powerful Bitcoin wallet primitives. Real wallet apps also need application-level patterns around configuration, secure storage, onboarding, sync state, transaction previews, error handling, and examples.
-
-This package focuses on those app-level helpers and safe defaults. It should not become a competing implementation of BDK, a wrapper around every BDK method, or a place for advanced wallet behavior that belongs in `bdk-dart` or `bdk_flutter`.
+`bdk_wallet_kit` is not a replacement for `bdk-dart`. It provides app-level helpers and reusable Flutter patterns around wallet setup, secure storage, sync state, balance loading, receive addresses, transaction previews, onboarding, and simple wallet UI components.
 
 ## Current Status
 
 Early experimental foundation.
 
-The package currently includes lightweight models, storage abstractions, and placeholders for future BDK integration. It does not create real wallets, sync wallets, estimate fees, generate receive addresses, sign transactions, or broadcast transactions yet.
+The package structure, storage layer, sync state, balance/address models, basic widgets, and example Flutter app are in place. Real wallet operations are intentionally isolated behind the BDK adapter and are still pending integration.
 
-## Planned Features
+## Why This Exists
 
-- Wallet setup helpers for app onboarding flows.
-- Secure storage adapters for Flutter apps.
-- Sync state models for Flutter UI.
-- Transaction preview models built from real BDK data.
-- Testnet and signet onboarding helpers.
-- Developer-friendly examples.
-- Community discussion around helpers that may eventually belong upstream in `bdk-dart`.
+BDK exposes powerful Bitcoin wallet primitives. Flutter apps also need repeated app-level pieces: secure mnemonic storage, testnet-first setup, sync state that UI can observe, balance and address presentation models, transaction preview flows, and small reusable widgets.
+
+This package collects those Flutter-facing patterns without copying BDK internals or wrapping every BDK method.
+
+## Relationship with bdk-dart
+
+`bdk-dart` is the BDK binding layer for Dart and Flutter.
+
+`bdk_wallet_kit` sits above it as a Flutter app toolkit. It uses `bdk-dart` for wallet operations and focuses on the repeated app-level patterns Flutter developers need when building real Bitcoin wallet apps.
+
+Advanced wallet behavior, descriptor-level work, signing internals, and full BDK feature access should remain in `bdk-dart`.
+
+Note: the adapter is currently structured for `bdk_dart`, but this workspace is verified with Dart 3.6 while the local `bdk_dart` package requires Dart 3.10. Until those constraints line up, the direct BDK calls remain TODOs in the adapter layer.
+
+## What Belongs Here
+
+- Flutter-friendly wallet setup flows.
+- Secure storage abstractions and adapters.
+- Sync state management for app UI.
+- Balance and receive-address models.
+- Transaction preview and result models.
+- Testnet-first onboarding helpers.
+- Small reusable Flutter widgets.
+- Example Flutter app patterns.
+
+## What Belongs in bdk-dart
+
+- Descriptor and key management internals.
+- Wallet database behavior.
+- Sync engine implementation.
+- Fee estimation primitives.
+- Transaction building, signing, and broadcasting.
+- Complete access to BDK wallet APIs.
 
 ## Basic Usage
 
 ```dart
 import 'package:bdk_wallet_kit/bdk_wallet_kit.dart';
 
-Future<void> main() async {
-  final kit = BdkWalletKit(
-    config: const WalletKitConfig(
-      network: WalletNetwork.testnet,
-    ),
-    storage: MemoryWalletStorage(),
-  );
+final kit = BdkWalletKit(
+  config: WalletKitConfig.testnet(),
+  storage: const SecureWalletStorage(),
+);
 
-  await kit.initialize();
+await kit.createWallet(
+  mnemonic: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about',
+);
 
-  await kit.restoreWallet('abandon abandon abandon ...');
-
-  final hasMnemonic = await kit.storage.hasMnemonic();
-  print('Mnemonic stored: $hasMnemonic');
-}
+await kit.sync();
+final balance = await kit.getBalance();
+final address = await kit.getReceiveAddress();
 ```
 
-Real wallet operations are intentionally not implemented yet. Future versions will delegate wallet creation, restore, sync, balance, address generation, and transaction construction to `bdk-dart` or `bdk_flutter`.
+Real BDK operations are currently pending in the adapter. The public API is shaped so those calls can be wired without leaking BDK-specific types across the Flutter-facing package.
+
+## Widgets
+
+```dart
+WalletBalanceCard(
+  balance: WalletBalance(totalSats: 50000, spendableSats: 50000),
+);
+
+ReceiveAddressCard(
+  receiveAddress: receiveAddress,
+);
+
+SyncStatusBadge(
+  state: kit.syncState,
+);
+```
+
+## Example App
+
+The `example/` app demonstrates:
+
+- `WalletKitConfig.testnet()`
+- `SecureWalletStorage`
+- `WalletBalanceCard`
+- `ReceiveAddressCard`
+- `SyncStatusBadge`
+- Safe UI messages for pending BDK integration
+
+Run it with:
+
+```bash
+cd example
+flutter run
+```
 
 ## Roadmap
 
-### Phase 1: Foundation
+### Phase 1: Flutter Package Foundation
 
-- Package structure
-- Storage abstraction
-- Config models
+- Flutter package structure
+- Public API exports
+- Secure storage abstraction
 - Sync state models
-- Transaction preview models
-- Bitcoin amount utilities
+- Balance and receive address models
+- Basic Flutter widgets
+- Example Flutter app
 
-### Phase 2: BDK Integration
+### Phase 2: BDK-Dart Integration
 
-- Wallet creation
-- Wallet restore
-- Esplora configuration
+- Wallet creation through `bdk-dart`
+- Wallet restore through `bdk-dart`
+- Esplora backend configuration
+- Wallet sync
 - Balance fetching
 - Receive address generation
-- Sync integration
 
-### Phase 3: App-Level Helpers
+### Phase 3: Transaction Flow
 
+- Fee estimation
 - Transaction preview
-- Fee presets
-- Testnet onboarding helpers
-- Error mapping for Flutter UI
+- PSBT or transaction building through BDK
+- Signing
+- Broadcasting
+- Transaction result mapping
 
 ### Phase 4: Developer Experience
 
-- Example Flutter app
-- Riverpod examples
-- Documentation
-- Tracking issue for possible upstreaming into `bdk-dart`
+- Riverpod example
+- Testnet onboarding flow
+- Error mapping for Flutter UI
+- Documentation recipes
+- Tracking issue for feedback and possible upstreaming into `bdk-dart`
 
 ## Contributing
 
-Contributions are welcome while the scope is still being shaped. Please keep changes aligned with the package goal: app-level helpers for Flutter wallet apps using BDK.
+Contributions are welcome while the scope is being shaped. Please keep this package focused on Flutter app-level wallet patterns.
 
-Good contributions include tests, documentation, focused helpers, examples, and careful integration points with official BDK bindings.
-
-Please avoid adding broad BDK wrappers, fake wallet behavior, or advanced wallet logic that belongs in `bdk-dart` or `bdk_flutter`.
+Good contributions include tests, docs, adapters, widgets, examples, and focused helpers. Please avoid reimplementing Bitcoin wallet primitives, copying BDK internals, or turning this package into a broad wrapper around every `bdk-dart` method.
