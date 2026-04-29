@@ -3,11 +3,14 @@ import 'package:bdk_wallet_kit/src/bdk/bdk_wallet_adapter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class FakeBdkWalletAdapter extends BdkWalletAdapter {
+  @override
+  final WalletKitConfig config;
+
   bool createCalled = false;
   bool restoreCalled = false;
   bool syncCalled = false;
 
-  FakeBdkWalletAdapter({required super.config});
+  FakeBdkWalletAdapter({required this.config});
 
   @override
   Future<void> createWallet({required String mnemonic}) async {
@@ -36,6 +39,26 @@ class FakeBdkWalletAdapter extends BdkWalletAdapter {
       network: config.network,
       generatedAt: DateTime.utc(2026),
     );
+  }
+
+  @override
+  Future<TransactionPreview> previewSend({
+    required String recipientAddress,
+    required int amountSats,
+    FeeRatePreset feeRatePreset = FeeRatePreset.normal,
+  }) async {
+    return TransactionPreview(
+      recipientAddress: recipientAddress,
+      amountSats: amountSats,
+      estimatedFeeSats: 1000,
+      totalSats: amountSats + 1000,
+      feeRatePreset: feeRatePreset,
+    );
+  }
+
+  @override
+  Future<TransactionResult> send(TransactionPreview preview) {
+    throw UnimplementedError('fake send is intentionally unavailable');
   }
 }
 
@@ -104,6 +127,24 @@ void main() {
       expect(balance.totalSats, 50000);
       expect(address.address, 'tb1qexample');
       expect(address.network, WalletNetwork.testnet);
+    });
+
+    test('delegates transaction previews to adapter', () async {
+      final config = WalletKitConfig.testnet();
+      final adapter = FakeBdkWalletAdapter(config: config);
+      final kit = BdkWalletKit(
+        config: config,
+        storage: MemoryWalletStorage(),
+        bdkAdapter: adapter,
+      );
+
+      final preview = await kit.previewSend(
+        recipientAddress: 'tb1qexample',
+        amountSats: 10000,
+      );
+
+      expect(preview.estimatedFeeSats, 1000);
+      expect(preview.totalSats, 11000);
     });
   });
 }

@@ -8,10 +8,11 @@ environment:
   sdk: ^3.6.0
 
 dependencies:
-  # TODO: Switch this adapter dependency to bdk_dart when the published package
-  # and active Flutter SDK constraints line up. The local bdk_dart package is
-  # currently Dart >=3.10, while this project is being verified on Dart 3.6.
-  bdk_flutter: ^0.31.2
+  # TODO: Enable bdk_dart here once the active Flutter SDK supports the package
+  # constraint used by bdk-dart. The local bdk_dart package currently requires
+  # Dart >=3.10 while this workspace is on Flutter 3.27 / Dart 3.6.
+  # bdk_dart:
+  #   path: ../bdk-dart
   flutter:
     sdk: flutter
   flutter_secure_storage: ^9.2.4

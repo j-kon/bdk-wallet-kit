@@ -20,7 +20,7 @@ class BdkWalletKit {
     required this.config,
     required this.storage,
     BdkWalletAdapter? bdkAdapter,
-  }) : bdk = bdkAdapter ?? BdkWalletAdapter(config: config) {
+  }) : bdk = bdkAdapter ?? PendingBdkWalletAdapter(config: config) {
     if (config.testnetOnly && config.network.isMainnet) {
       throw const WalletKitException(
         'Mainnet is disabled while testnetOnly is true.',
@@ -70,17 +70,16 @@ class BdkWalletKit {
     required String recipientAddress,
     required int amountSats,
     FeeRatePreset feeRatePreset = FeeRatePreset.normal,
-  }) async {
-    // TODO: Estimate fees and construct the preview from bdk_dart transaction
-    // building APIs. Returning a zero-fee preview would be misleading, so this
-    // remains explicit until the BDK adapter owns fee estimation.
-    throw UnimplementedError('BDK fee estimation integration pending.');
+  }) {
+    return bdk.previewSend(
+      recipientAddress: recipientAddress,
+      amountSats: amountSats,
+      feeRatePreset: feeRatePreset,
+    );
   }
 
-  Future<TransactionResult> send(TransactionPreview preview) async {
-    // TODO: Build, sign, and broadcast through bdk_dart. Do not fake txids or
-    // broadcast status in this app-level toolkit.
-    throw UnimplementedError('BDK transaction sending integration pending.');
+  Future<TransactionResult> send(TransactionPreview preview) {
+    return bdk.send(preview);
   }
 
   void _validateMnemonic(String mnemonic) {
