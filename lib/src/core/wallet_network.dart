@@ -21,5 +21,5 @@ enum WalletNetwork {
   };
 }
 
-// TODO: Map WalletNetwork to bdk_dart's Network enum inside BdkMapper once the
-// bdk_dart dependency is enabled for this package's active Flutter SDK.
+// WalletNetwork maps to bdk_dart's Network enum inside the adapter layer so
+// BDK-specific types do not leak into the public Flutter-facing API.

@@ -9,10 +9,12 @@ environment:
   sdk: ^3.10.0
 
 dependencies:
-  bdk_dart:
-    path: ../bdk-dart
   flutter:
     sdk: flutter
+  bdk_dart:
+    git:
+      url: https://github.com/bitcoindevkit/bdk-dart.git
+      ref: main
   flutter_secure_storage: ^9.2.4
   meta: ^1.15.0
 

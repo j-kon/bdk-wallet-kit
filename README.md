@@ -8,7 +8,7 @@ A Flutter-first companion toolkit built on top of `bdk-dart` for developers buil
 
 Early experimental foundation.
 
-The package structure, storage layer, sync state, balance/address models, basic widgets, and example Flutter app are in place. Real wallet operations are intentionally isolated behind the BDK adapter and are still pending integration.
+The package structure, storage layer, sync state, balance/address models, basic widgets, and example Flutter app are in place. Real wallet operations are intentionally isolated behind the BDK adapter.
 
 ## Why This Exists
 
@@ -24,7 +24,7 @@ This package collects those Flutter-facing patterns without copying BDK internal
 
 Advanced wallet behavior, descriptor-level work, signing internals, and full BDK feature access should remain in `bdk-dart`.
 
-The package currently uses the local `bdk_dart` package through a path dependency while this integration is being developed. Before publishing to pub.dev, this dependency should be switched to the published `bdk_dart` package once available.
+`bdk_wallet_kit` currently uses `bdk-dart` through a Git dependency because `bdk-dart` is not yet published on pub.dev.
 
 ## What Belongs Here
 
@@ -65,7 +65,7 @@ final balance = await kit.getBalance();
 final address = await kit.getReceiveAddress();
 ```
 
-Real BDK operations are currently pending in the adapter. The public API is shaped so those calls can be wired without leaking BDK-specific types across the Flutter-facing package.
+BDK-specific types stay inside the adapter layer so the Flutter-facing package API remains focused on app-level wallet patterns.
 
 ## Widgets
 
