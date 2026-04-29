@@ -1,9 +1,4 @@
-enum WalletSyncStatus {
-  idle,
-  syncing,
-  synced,
-  failed,
-}
+enum WalletSyncStatus { idle, syncing, synced, failed }
 
 class WalletSyncState {
   final WalletSyncStatus status;

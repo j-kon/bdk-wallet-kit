@@ -30,9 +30,6 @@ class WalletSetupFlow {
       return this;
     }
 
-    return WalletSetupFlow(
-      steps: steps,
-      currentIndex: currentIndex + 1,
-    );
+    return WalletSetupFlow(steps: steps, currentIndex: currentIndex + 1);
   }
 }

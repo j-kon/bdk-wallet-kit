@@ -1,5 +1,6 @@
 import '../address/receive_address.dart';
 import '../balance/wallet_balance.dart';
+import '../bdk/bdk_dart_wallet_adapter.dart';
 import '../bdk/bdk_wallet_adapter.dart';
 import '../storage/wallet_storage.dart';
 import '../sync/wallet_sync_state.dart';
@@ -20,7 +21,7 @@ class BdkWalletKit {
     required this.config,
     required this.storage,
     BdkWalletAdapter? bdkAdapter,
-  }) : bdk = bdkAdapter ?? PendingBdkWalletAdapter(config: config) {
+  }) : bdk = bdkAdapter ?? BdkDartWalletAdapter(config: config) {
     if (config.testnetOnly && config.network.isMainnet) {
       throw const WalletKitException(
         'Mainnet is disabled while testnetOnly is true.',
@@ -30,17 +31,13 @@ class BdkWalletKit {
 
   WalletSyncState get syncState => _syncState;
 
-  Future<void> createWallet({
-    required String mnemonic,
-  }) async {
+  Future<void> createWallet({required String mnemonic}) async {
     _validateMnemonic(mnemonic);
     await storage.saveMnemonic(mnemonic.trim());
     await bdk.createWallet(mnemonic: mnemonic.trim());
   }
 
-  Future<void> restoreWallet({
-    required String mnemonic,
-  }) async {
+  Future<void> restoreWallet({required String mnemonic}) async {
     _validateMnemonic(mnemonic);
     await storage.saveMnemonic(mnemonic.trim());
     await bdk.restoreWallet(mnemonic: mnemonic.trim());

@@ -1,6 +1,1 @@
-enum FeeRatePreset {
-  slow,
-  normal,
-  fast,
-  custom,
-}
+enum FeeRatePreset { slow, normal, fast, custom }

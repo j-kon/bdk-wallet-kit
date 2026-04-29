@@ -15,10 +15,7 @@ class TransactionPreview {
     required this.totalSats,
     required this.feeRatePreset,
     this.changeAddress,
-  })  : assert(amountSats >= 0, 'amountSats must be non-negative'),
-        assert(
-          estimatedFeeSats >= 0,
-          'estimatedFeeSats must be non-negative',
-        ),
-        assert(totalSats >= 0, 'totalSats must be non-negative');
+  }) : assert(amountSats >= 0, 'amountSats must be non-negative'),
+       assert(estimatedFeeSats >= 0, 'estimatedFeeSats must be non-negative'),
+       assert(totalSats >= 0, 'totalSats must be non-negative');
 }

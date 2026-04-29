@@ -5,10 +5,7 @@ import '../sync/wallet_sync_state.dart';
 class SyncStatusBadge extends StatelessWidget {
   final WalletSyncState state;
 
-  const SyncStatusBadge({
-    super.key,
-    required this.state,
-  });
+  const SyncStatusBadge({super.key, required this.state});
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +28,9 @@ class SyncStatusBadge extends StatelessWidget {
         child: Text(
           label,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );

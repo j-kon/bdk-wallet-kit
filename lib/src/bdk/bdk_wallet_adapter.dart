@@ -8,13 +8,9 @@ import '../transactions/transaction_result.dart';
 abstract class BdkWalletAdapter {
   WalletKitConfig get config;
 
-  Future<void> createWallet({
-    required String mnemonic,
-  });
+  Future<void> createWallet({required String mnemonic});
 
-  Future<void> restoreWallet({
-    required String mnemonic,
-  });
+  Future<void> restoreWallet({required String mnemonic});
 
   Future<void> sync();
 
@@ -35,14 +31,10 @@ class PendingBdkWalletAdapter implements BdkWalletAdapter {
   @override
   final WalletKitConfig config;
 
-  const PendingBdkWalletAdapter({
-    required this.config,
-  });
+  const PendingBdkWalletAdapter({required this.config});
 
   @override
-  Future<void> createWallet({
-    required String mnemonic,
-  }) async {
+  Future<void> createWallet({required String mnemonic}) async {
     // TODO: Use bdk_dart wallet creation APIs here.
     // Expected future work:
     // - map WalletNetwork through BdkMapper
@@ -52,9 +44,7 @@ class PendingBdkWalletAdapter implements BdkWalletAdapter {
   }
 
   @override
-  Future<void> restoreWallet({
-    required String mnemonic,
-  }) async {
+  Future<void> restoreWallet({required String mnemonic}) async {
     // TODO: Use bdk_dart descriptor/wallet restore APIs here.
     throw UnimplementedError('BDK wallet restore integration pending.');
   }

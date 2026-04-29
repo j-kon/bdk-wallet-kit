@@ -7,19 +7,18 @@ enum WalletNetwork {
   bool get isMainnet => this == WalletNetwork.bitcoin;
 
   bool get isTestnetLike => switch (this) {
-        WalletNetwork.bitcoin => false,
-        WalletNetwork.testnet ||
-        WalletNetwork.signet ||
-        WalletNetwork.regtest =>
-          true,
-      };
+    WalletNetwork.bitcoin => false,
+    WalletNetwork.testnet ||
+    WalletNetwork.signet ||
+    WalletNetwork.regtest => true,
+  };
 
   String get displayName => switch (this) {
-        WalletNetwork.bitcoin => 'Bitcoin',
-        WalletNetwork.testnet => 'Testnet',
-        WalletNetwork.signet => 'Signet',
-        WalletNetwork.regtest => 'Regtest',
-      };
+    WalletNetwork.bitcoin => 'Bitcoin',
+    WalletNetwork.testnet => 'Testnet',
+    WalletNetwork.signet => 'Signet',
+    WalletNetwork.regtest => 'Regtest',
+  };
 }
 
 // TODO: Map WalletNetwork to bdk_dart's Network enum inside BdkMapper once the

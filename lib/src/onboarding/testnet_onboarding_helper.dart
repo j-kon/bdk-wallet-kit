@@ -5,10 +5,10 @@ class TestnetOnboardingHelper {
   const TestnetOnboardingHelper();
 
   List<WalletNetwork> get recommendedNetworks => const [
-        WalletNetwork.testnet,
-        WalletNetwork.signet,
-        WalletNetwork.regtest,
-      ];
+    WalletNetwork.testnet,
+    WalletNetwork.signet,
+    WalletNetwork.regtest,
+  ];
 
   WalletKitConfig defaultConfig() => WalletKitConfig.testnet();
 

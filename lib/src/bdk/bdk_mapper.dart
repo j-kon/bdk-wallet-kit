@@ -1,12 +1,20 @@
+import 'package:bdk_dart/bdk.dart' as bdk;
+
 import '../core/wallet_network.dart';
 
 class BdkMapper {
   const BdkMapper._();
 
+  static bdk.Network network(WalletNetwork network) {
+    return switch (network) {
+      WalletNetwork.bitcoin => bdk.Network.bitcoin,
+      WalletNetwork.testnet => bdk.Network.testnet,
+      WalletNetwork.signet => bdk.Network.signet,
+      WalletNetwork.regtest => bdk.Network.regtest,
+    };
+  }
+
   static String networkName(WalletNetwork network) {
-    // TODO: Replace this with a WalletNetwork -> bdk_dart Network mapper.
-    // Keep that conversion here so BDK-specific types do not leak throughout
-    // the Flutter-facing package API.
     return switch (network) {
       WalletNetwork.bitcoin => 'bitcoin',
       WalletNetwork.testnet => 'testnet',

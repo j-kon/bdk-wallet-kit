@@ -1,20 +1,155 @@
+import 'package:bdk_dart/bdk.dart' as bdk;
+
+import '../address/receive_address.dart';
+import '../balance/wallet_balance.dart';
+import '../core/wallet_kit_config.dart';
+import '../transactions/fee_rate_preset.dart';
+import '../transactions/transaction_preview.dart';
+import '../transactions/transaction_result.dart';
+import 'bdk_mapper.dart';
 import 'bdk_wallet_adapter.dart';
 
-class BdkDartWalletAdapter extends PendingBdkWalletAdapter {
-  const BdkDartWalletAdapter({
-    required super.config,
+class BdkDartWalletAdapter implements BdkWalletAdapter {
+  @override
+  final WalletKitConfig config;
+
+  final int lookahead;
+  final int parallelRequests;
+
+  bdk.Wallet? _wallet;
+  bdk.Persister? _persister;
+
+  BdkDartWalletAdapter({
+    required this.config,
+    this.lookahead = 25,
+    this.parallelRequests = 4,
   });
 
-  // TODO: Add `import 'package:bdk_dart/bdk.dart' as bdk;` once the project can
-  // depend on bdk_dart with the active Flutter SDK.
-  //
-  // This is the intended home for all direct bdk_dart calls:
-  // - bdk.Mnemonic / bdk.DescriptorSecretKey
-  // - bdk.Descriptor.newBip84 or bdk.Descriptor.newBip86
-  // - bdk.Persister and bdk.Wallet construction
-  // - blockchain sync through the bdk_dart backend APIs
-  // - balance and address mapping into Flutter-facing package models
-  //
-  // Keeping this adapter separate preserves the package boundary: app code uses
-  // BdkWalletKit, while advanced wallet work still belongs in bdk_dart.
+  @override
+  Future<void> createWallet({required String mnemonic}) async {
+    _wallet = _buildWallet(mnemonic);
+  }
+
+  @override
+  Future<void> restoreWallet({required String mnemonic}) async {
+    _wallet = _buildWallet(mnemonic);
+  }
+
+  @override
+  Future<void> sync() async {
+    final wallet = _requireWallet();
+    final persister = _requirePersister();
+    final client = bdk.EsploraClient(url: config.esploraUrl, proxy: null);
+
+    final requestBuilder = wallet.startFullScan();
+    final request = requestBuilder.build();
+    final update = client.fullScan(
+      request: request,
+      stopGap: lookahead,
+      parallelRequests: parallelRequests,
+    );
+
+    wallet.applyUpdate(update: update);
+    wallet.persist(persister: persister);
+
+    update.dispose();
+    request.dispose();
+    requestBuilder.dispose();
+    client.dispose();
+  }
+
+  @override
+  Future<WalletBalance> getBalance() async {
+    final balance = _requireWallet().balance();
+
+    return WalletBalance(
+      totalSats: balance.total.toSat(),
+      spendableSats: balance.trustedSpendable.toSat(),
+      immatureSats: balance.immature.toSat(),
+      trustedPendingSats: balance.trustedPending.toSat(),
+      untrustedPendingSats: balance.untrustedPending.toSat(),
+    );
+  }
+
+  @override
+  Future<ReceiveAddress> getReceiveAddress() async {
+    final addressInfo = _requireWallet().revealNextAddress(
+      keychain: bdk.KeychainKind.external_,
+    );
+    final persister = _requirePersister();
+    _requireWallet().persist(persister: persister);
+
+    return ReceiveAddress(
+      address: addressInfo.address.toString(),
+      network: config.network,
+      index: addressInfo.index,
+      generatedAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<TransactionPreview> previewSend({
+    required String recipientAddress,
+    required int amountSats,
+    FeeRatePreset feeRatePreset = FeeRatePreset.normal,
+  }) async {
+    // TODO: Build this from bdk_dart TxBuilder, fee estimation, and PSBT data.
+    throw UnimplementedError('BDK fee estimation integration pending.');
+  }
+
+  @override
+  Future<TransactionResult> send(TransactionPreview preview) async {
+    // TODO: Build, sign, and broadcast through bdk_dart.
+    throw UnimplementedError('BDK transaction sending integration pending.');
+  }
+
+  bdk.Wallet _buildWallet(String mnemonicPhrase) {
+    final network = BdkMapper.network(config.network);
+    final mnemonic = bdk.Mnemonic.fromString(mnemonic: mnemonicPhrase);
+    final secretKey = bdk.DescriptorSecretKey(
+      network: network,
+      mnemonic: mnemonic,
+      password: null,
+    );
+
+    final descriptor = bdk.Descriptor.newBip84(
+      secretKey: secretKey,
+      keychainKind: bdk.KeychainKind.external_,
+      network: network,
+    );
+    final changeDescriptor = bdk.Descriptor.newBip84(
+      secretKey: secretKey,
+      keychainKind: bdk.KeychainKind.internal,
+      network: network,
+    );
+    final persister = bdk.Persister.newInMemory();
+    final wallet = bdk.Wallet(
+      descriptor: descriptor,
+      changeDescriptor: changeDescriptor,
+      network: network,
+      persister: persister,
+      lookahead: lookahead,
+    );
+
+    _persister = persister;
+    return wallet;
+  }
+
+  bdk.Wallet _requireWallet() {
+    final wallet = _wallet;
+    if (wallet == null) {
+      throw StateError(
+        'Create or restore a wallet before calling BDK methods.',
+      );
+    }
+    return wallet;
+  }
+
+  bdk.Persister _requirePersister() {
+    final persister = _persister;
+    if (persister == null) {
+      throw StateError('Wallet persister is not initialized.');
+    }
+    return persister;
+  }
 }

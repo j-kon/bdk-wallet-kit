@@ -24,7 +24,7 @@ This package collects those Flutter-facing patterns without copying BDK internal
 
 Advanced wallet behavior, descriptor-level work, signing internals, and full BDK feature access should remain in `bdk-dart`.
 
-Note: the adapter is currently structured for `bdk_dart`, but this workspace is verified with Dart 3.6 while the local `bdk_dart` package requires Dart 3.10. Until those constraints line up, the direct BDK calls remain TODOs in the adapter layer.
+The package currently uses the local `bdk_dart` package through a path dependency while this integration is being developed. Before publishing to pub.dev, this dependency should be switched to the published `bdk_dart` package once available.
 
 ## What Belongs Here
 
