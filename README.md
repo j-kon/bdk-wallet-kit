@@ -8,7 +8,17 @@ A Flutter-first companion toolkit built on top of `bdk-dart` for developers buil
 
 Early experimental foundation.
 
+This package is experimental and should be used on testnet/signet while the BDK integration is being developed.
+
 The package structure, storage layer, sync state, balance/address models, basic widgets, and example Flutter app are in place. Real wallet operations are intentionally isolated behind the BDK adapter.
+
+## Prerequisites
+
+Because `bdk-dart` uses Dart Native Assets, you need:
+
+- Dart SDK >= 3.10
+- Flutter SDK
+- Rust toolchain with Cargo
 
 ## Why This Exists
 

@@ -93,13 +93,18 @@ class BdkDartWalletAdapter implements BdkWalletAdapter {
     required int amountSats,
     FeeRatePreset feeRatePreset = FeeRatePreset.normal,
   }) async {
-    // TODO: Build this from bdk_dart TxBuilder, fee estimation, and PSBT data.
+    // TODO: Use bdk.Address(address: ..., network: ...), Address.scriptPubkey(),
+    // bdk.Amount.fromSat(), bdk.FeeRate.fromSatPerVb(), bdk.TxBuilder()
+    // .addRecipient().feeRate().finish(wallet: ...), and bdk.Psbt.fee() to
+    // build a real preview without broadcasting.
     throw UnimplementedError('BDK fee estimation integration pending.');
   }
 
   @override
   Future<TransactionResult> send(TransactionPreview preview) async {
-    // TODO: Build, sign, and broadcast through bdk_dart.
+    // TODO: Use bdk.TxBuilder to create a PSBT, wallet.sign(psbt: ...),
+    // psbt.extractTx(), transaction.computeTxid(), and
+    // bdk.EsploraClient.broadcast(transaction: ...) for the real send path.
     throw UnimplementedError('BDK transaction sending integration pending.');
   }
 

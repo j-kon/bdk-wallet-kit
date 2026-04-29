@@ -2,19 +2,23 @@ name: bdk_wallet_kit
 description: Flutter-first app-level helpers for building Bitcoin wallet apps with BDK.
 version: 0.1.0
 publish_to: none
-repository: https://github.com/bitcoindevkit/bdk_wallet_kit
-issue_tracker: https://github.com/bitcoindevkit/bdk_wallet_kit/issues
+
+repository: https://github.com/j-kon/bdk-wallet-kit
+issue_tracker: https://github.com/j-kon/bdk-wallet-kit/issues
 
 environment:
   sdk: ^3.10.0
+  flutter: ">=3.35.0"
 
 dependencies:
   flutter:
     sdk: flutter
+
   bdk_dart:
     git:
       url: https://github.com/bitcoindevkit/bdk-dart.git
       ref: main
+
   flutter_secure_storage: ^9.2.4
   meta: ^1.15.0
 
