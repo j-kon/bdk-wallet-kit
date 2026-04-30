@@ -3,6 +3,7 @@ library bdk_wallet_kit;
 export 'src/address/receive_address.dart';
 export 'src/balance/wallet_balance.dart';
 export 'src/core/bdk_wallet_kit.dart';
+export 'src/core/created_wallet.dart';
 export 'src/core/wallet_kit_config.dart';
 export 'src/core/wallet_kit_exception.dart';
 export 'src/core/wallet_network.dart';

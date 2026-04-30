@@ -9,10 +9,15 @@ void main() {
       expect(await storage.hasMnemonic(), isFalse);
       expect(await storage.readMnemonic(), isNull);
 
-      await storage.saveMnemonic('abandon abandon abandon');
+      await storage.saveMnemonic(
+        'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
 
       expect(await storage.hasMnemonic(), isTrue);
-      expect(await storage.readMnemonic(), 'abandon abandon abandon');
+      expect(
+        await storage.readMnemonic(),
+        'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
 
       await storage.deleteMnemonic();
 

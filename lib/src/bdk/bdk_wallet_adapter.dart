@@ -8,9 +8,13 @@ import '../transactions/transaction_result.dart';
 abstract class BdkWalletAdapter {
   WalletKitConfig get config;
 
+  Future<String> generateMnemonic();
+
   Future<void> createWallet({required String mnemonic});
 
   Future<void> restoreWallet({required String mnemonic});
+
+  Future<void> reset();
 
   Future<void> sync();
 
@@ -34,6 +38,13 @@ class PendingBdkWalletAdapter implements BdkWalletAdapter {
   const PendingBdkWalletAdapter({required this.config});
 
   @override
+  Future<String> generateMnemonic() async {
+    // TODO: Use bdk.Mnemonic(wordCount: bdk.WordCount.words12) when the real
+    // bdk_dart adapter is enabled.
+    throw UnimplementedError('BDK mnemonic generation integration pending.');
+  }
+
+  @override
   Future<void> createWallet({required String mnemonic}) async {
     // TODO: Use bdk_dart wallet creation APIs here.
     // Expected future work:
@@ -47,6 +58,12 @@ class PendingBdkWalletAdapter implements BdkWalletAdapter {
   Future<void> restoreWallet({required String mnemonic}) async {
     // TODO: Use bdk_dart descriptor/wallet restore APIs here.
     throw UnimplementedError('BDK wallet restore integration pending.');
+  }
+
+  @override
+  Future<void> reset() async {
+    // No-op for the pending adapter. Real adapters should clear in-memory BDK
+    // wallet state and release native resources where applicable.
   }
 
   @override

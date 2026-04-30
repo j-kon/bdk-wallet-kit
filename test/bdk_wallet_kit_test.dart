@@ -9,22 +9,41 @@ class FakeBdkWalletAdapter extends BdkWalletAdapter {
   bool createCalled = false;
   bool restoreCalled = false;
   bool syncCalled = false;
+  bool failSync = false;
+  bool resetCalled = false;
+  String? createdMnemonic;
+  String? restoredMnemonic;
 
   FakeBdkWalletAdapter({required this.config});
 
   @override
+  Future<String> generateMnemonic() async {
+    return 'legal winner thank year wave sausage worth useful legal winner thank yellow';
+  }
+
+  @override
   Future<void> createWallet({required String mnemonic}) async {
     createCalled = true;
+    createdMnemonic = mnemonic;
   }
 
   @override
   Future<void> restoreWallet({required String mnemonic}) async {
     restoreCalled = true;
+    restoredMnemonic = mnemonic;
+  }
+
+  @override
+  Future<void> reset() async {
+    resetCalled = true;
   }
 
   @override
   Future<void> sync() async {
     syncCalled = true;
+    if (failSync) {
+      throw StateError('sync failed');
+    }
   }
 
   @override
@@ -74,10 +93,21 @@ void main() {
         bdkAdapter: adapter,
       );
 
-      await kit.createWallet(mnemonic: 'abandon abandon abandon');
+      await kit.createWallet(
+        mnemonic:
+            'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
 
-      expect(await storage.readMnemonic(), 'abandon abandon abandon');
+      expect(
+        await storage.readMnemonic(),
+        'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
       expect(adapter.createCalled, isTrue);
+      expect(
+        adapter.createdMnemonic,
+        'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
+      expect(await kit.hasWallet(), isTrue);
     });
 
     test('restoreWallet stores mnemonic and calls adapter', () async {
@@ -90,10 +120,111 @@ void main() {
         bdkAdapter: adapter,
       );
 
-      await kit.restoreWallet(mnemonic: 'abandon abandon abandon');
+      await kit.restoreWallet(
+        mnemonic:
+            'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
 
-      expect(await storage.readMnemonic(), 'abandon abandon abandon');
+      expect(
+        await storage.readMnemonic(),
+        'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
       expect(adapter.restoreCalled, isTrue);
+      expect(
+        adapter.restoredMnemonic,
+        'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
+      expect(await kit.hasWallet(), isTrue);
+    });
+
+    test('initializeFromStorage restores wallet when mnemonic exists', () async {
+      final config = WalletKitConfig.testnet();
+      final storage = MemoryWalletStorage();
+      final adapter = FakeBdkWalletAdapter(config: config);
+      final kit = BdkWalletKit(
+        config: config,
+        storage: storage,
+        bdkAdapter: adapter,
+      );
+
+      await storage.saveMnemonic(
+        'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
+
+      final restored = await kit.initializeFromStorage();
+
+      expect(restored, isTrue);
+      expect(adapter.restoreCalled, isTrue);
+      expect(
+        adapter.restoredMnemonic,
+        'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
+      expect(await kit.hasWallet(), isTrue);
+    });
+
+    test(
+      'initializeFromStorage returns false when no mnemonic exists',
+      () async {
+        final config = WalletKitConfig.testnet();
+        final adapter = FakeBdkWalletAdapter(config: config);
+        final kit = BdkWalletKit(
+          config: config,
+          storage: MemoryWalletStorage(),
+          bdkAdapter: adapter,
+        );
+
+        final restored = await kit.initializeFromStorage();
+
+        expect(restored, isFalse);
+        expect(adapter.restoreCalled, isFalse);
+        expect(await kit.hasWallet(), isFalse);
+      },
+    );
+
+    test('createNewWallet generates, creates, and stores mnemonic', () async {
+      final config = WalletKitConfig.testnet();
+      final storage = MemoryWalletStorage();
+      final adapter = FakeBdkWalletAdapter(config: config);
+      final kit = BdkWalletKit(
+        config: config,
+        storage: storage,
+        bdkAdapter: adapter,
+      );
+
+      final createdWallet = await kit.createNewWallet();
+
+      expect(
+        createdWallet.mnemonic,
+        'legal winner thank year wave sausage worth useful legal winner thank yellow',
+      );
+      expect(createdWallet.network, WalletNetwork.testnet);
+      expect(createdWallet.createdAt, isNotNull);
+      expect(adapter.createCalled, isTrue);
+      expect(adapter.createdMnemonic, createdWallet.mnemonic);
+      expect(await storage.readMnemonic(), createdWallet.mnemonic);
+      expect(await kit.hasWallet(), isTrue);
+    });
+
+    test('deleteWallet clears storage and resets adapter state', () async {
+      final config = WalletKitConfig.testnet();
+      final storage = MemoryWalletStorage();
+      final adapter = FakeBdkWalletAdapter(config: config);
+      final kit = BdkWalletKit(
+        config: config,
+        storage: storage,
+        bdkAdapter: adapter,
+      );
+
+      await kit.createWallet(
+        mnemonic:
+            'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
+      await kit.deleteWallet();
+
+      expect(await storage.hasMnemonic(), isFalse);
+      expect(await kit.hasWallet(), isFalse);
+      expect(adapter.resetCalled, isTrue);
+      expect(kit.syncState.status, WalletSyncStatus.idle);
     });
 
     test('sync updates state after adapter sync', () async {
@@ -105,11 +236,36 @@ void main() {
         bdkAdapter: adapter,
       );
 
+      await kit.createWallet(
+        mnemonic:
+            'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
       await kit.sync();
 
       expect(adapter.syncCalled, isTrue);
       expect(kit.syncState.status, WalletSyncStatus.synced);
       expect(kit.syncState.lastSyncedAt, isNotNull);
+    });
+
+    test('sync updates state after adapter failure', () async {
+      final config = WalletKitConfig.testnet();
+      final adapter = FakeBdkWalletAdapter(config: config)..failSync = true;
+      final kit = BdkWalletKit(
+        config: config,
+        storage: MemoryWalletStorage(),
+        bdkAdapter: adapter,
+      );
+
+      await kit.createWallet(
+        mnemonic:
+            'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
+
+      await expectLater(kit.sync(), throwsA(isA<WalletKitException>()));
+
+      expect(adapter.syncCalled, isTrue);
+      expect(kit.syncState.status, WalletSyncStatus.failed);
+      expect(kit.syncState.errorMessage, contains('sync failed'));
     });
 
     test('delegates balance and receive address loading', () async {
@@ -121,6 +277,10 @@ void main() {
         bdkAdapter: adapter,
       );
 
+      await kit.createWallet(
+        mnemonic:
+            'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
       final balance = await kit.getBalance();
       final address = await kit.getReceiveAddress();
 
@@ -138,6 +298,10 @@ void main() {
         bdkAdapter: adapter,
       );
 
+      await kit.createWallet(
+        mnemonic:
+            'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
       final preview = await kit.previewSend(
         recipientAddress: 'tb1qexample',
         amountSats: 10000,
@@ -145,6 +309,76 @@ void main() {
 
       expect(preview.estimatedFeeSats, 1000);
       expect(preview.totalSats, 11000);
+    });
+
+    test('wallet operations throw clearly before create or restore', () async {
+      final config = WalletKitConfig.testnet();
+      final adapter = FakeBdkWalletAdapter(config: config);
+      final kit = BdkWalletKit(
+        config: config,
+        storage: MemoryWalletStorage(),
+        bdkAdapter: adapter,
+      );
+
+      expect(
+        kit.getBalance,
+        throwsA(
+          isA<WalletNotInitializedException>().having(
+            (error) => error.message,
+            'message',
+            'Wallet is not initialized. Create or restore a wallet first.',
+          ),
+        ),
+      );
+      expect(
+        kit.sync,
+        throwsA(
+          isA<WalletNotInitializedException>().having(
+            (error) => error.message,
+            'message',
+            'Wallet is not initialized. Create or restore a wallet first.',
+          ),
+        ),
+      );
+      expect(
+        kit.getReceiveAddress,
+        throwsA(
+          isA<WalletNotInitializedException>().having(
+            (error) => error.message,
+            'message',
+            'Wallet is not initialized. Create or restore a wallet first.',
+          ),
+        ),
+      );
+      expect(
+        () =>
+            kit.previewSend(recipientAddress: 'tb1qexample', amountSats: 1000),
+        throwsA(
+          isA<WalletNotInitializedException>().having(
+            (error) => error.message,
+            'message',
+            'Wallet is not initialized. Create or restore a wallet first.',
+          ),
+        ),
+      );
+      expect(
+        () => kit.send(
+          TransactionPreview(
+            recipientAddress: 'tb1qexample',
+            amountSats: 1000,
+            estimatedFeeSats: 0,
+            totalSats: 1000,
+            feeRatePreset: FeeRatePreset.normal,
+          ),
+        ),
+        throwsA(
+          isA<WalletNotInitializedException>().having(
+            (error) => error.message,
+            'message',
+            'Wallet is not initialized. Create or restore a wallet first.',
+          ),
+        ),
+      );
     });
   });
 }

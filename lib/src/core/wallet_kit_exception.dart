@@ -7,3 +7,8 @@ class WalletKitException implements Exception {
   @override
   String toString() => 'WalletKitException: $message';
 }
+
+class WalletNotInitializedException extends WalletKitException {
+  const WalletNotInitializedException()
+    : super('Wallet is not initialized. Create or restore a wallet first.');
+}

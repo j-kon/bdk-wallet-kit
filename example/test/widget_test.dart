@@ -7,14 +7,18 @@ void main() {
     await tester.pumpWidget(
       BdkWalletKitExampleApp(storage: MemoryWalletStorage()),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('bdk_wallet_kit'), findsOneWidget);
-    expect(find.text('Testnet wallet toolkit'), findsOneWidget);
-    expect(find.text('Create wallet'), findsOneWidget);
-    expect(find.text('Restore wallet'), findsOneWidget);
-    expect(find.text('Sync wallet'), findsOneWidget);
-    expect(find.text('Load balance'), findsOneWidget);
-    expect(find.text('Receive address'), findsWidgets);
+    expect(
+      find.text('Testnet only. Do not use mainnet funds.'),
+      findsOneWidget,
+    );
+    expect(find.text('Set up a testnet wallet'), findsOneWidget);
+    expect(find.text('Create new testnet wallet'), findsOneWidget);
+    expect(find.text('Restore existing testnet wallet'), findsOneWidget);
+    expect(find.textContaining('abandon abandon'), findsNothing);
+    expect(find.textContaining('BDK integration pending'), findsNothing);
+    expect(find.textContaining('Action completed'), findsNothing);
   });
 }

@@ -26,13 +26,38 @@ class BdkDartWalletAdapter implements BdkWalletAdapter {
   });
 
   @override
+  Future<String> generateMnemonic() async {
+    // bdk_dart owns mnemonic generation; this adapter returns only the phrase
+    // string so public Flutter-facing APIs do not expose BDK types.
+    final mnemonic = bdk.Mnemonic(wordCount: bdk.WordCount.words12);
+    try {
+      return mnemonic.toString();
+    } finally {
+      mnemonic.dispose();
+    }
+  }
+
+  @override
   Future<void> createWallet({required String mnemonic}) async {
+    await reset();
     _wallet = _buildWallet(mnemonic);
   }
 
   @override
   Future<void> restoreWallet({required String mnemonic}) async {
+    await reset();
     _wallet = _buildWallet(mnemonic);
+  }
+
+  @override
+  Future<void> reset() async {
+    final wallet = _wallet;
+    final persister = _persister;
+    _wallet = null;
+    _persister = null;
+
+    wallet?.dispose();
+    persister?.dispose();
   }
 
   @override
@@ -40,22 +65,27 @@ class BdkDartWalletAdapter implements BdkWalletAdapter {
     final wallet = _requireWallet();
     final persister = _requirePersister();
     final client = bdk.EsploraClient(url: config.esploraUrl, proxy: null);
+    bdk.FullScanRequestBuilder? requestBuilder;
+    bdk.FullScanRequest? request;
+    bdk.Update? update;
 
-    final requestBuilder = wallet.startFullScan();
-    final request = requestBuilder.build();
-    final update = client.fullScan(
-      request: request,
-      stopGap: lookahead,
-      parallelRequests: parallelRequests,
-    );
+    try {
+      requestBuilder = wallet.startFullScan();
+      request = requestBuilder.build();
+      update = client.fullScan(
+        request: request,
+        stopGap: lookahead,
+        parallelRequests: parallelRequests,
+      );
 
-    wallet.applyUpdate(update: update);
-    wallet.persist(persister: persister);
-
-    update.dispose();
-    request.dispose();
-    requestBuilder.dispose();
-    client.dispose();
+      wallet.applyUpdate(update: update);
+      wallet.persist(persister: persister);
+    } finally {
+      update?.dispose();
+      request?.dispose();
+      requestBuilder?.dispose();
+      client.dispose();
+    }
   }
 
   @override
@@ -111,33 +141,49 @@ class BdkDartWalletAdapter implements BdkWalletAdapter {
   bdk.Wallet _buildWallet(String mnemonicPhrase) {
     final network = BdkMapper.network(config.network);
     final mnemonic = bdk.Mnemonic.fromString(mnemonic: mnemonicPhrase);
-    final secretKey = bdk.DescriptorSecretKey(
-      network: network,
-      mnemonic: mnemonic,
-      password: null,
-    );
+    bdk.DescriptorSecretKey? secretKey;
+    bdk.Descriptor? descriptor;
+    bdk.Descriptor? changeDescriptor;
 
-    final descriptor = bdk.Descriptor.newBip84(
-      secretKey: secretKey,
-      keychainKind: bdk.KeychainKind.external_,
-      network: network,
-    );
-    final changeDescriptor = bdk.Descriptor.newBip84(
-      secretKey: secretKey,
-      keychainKind: bdk.KeychainKind.internal,
-      network: network,
-    );
-    final persister = bdk.Persister.newInMemory();
-    final wallet = bdk.Wallet(
-      descriptor: descriptor,
-      changeDescriptor: changeDescriptor,
-      network: network,
-      persister: persister,
-      lookahead: lookahead,
-    );
+    try {
+      secretKey = bdk.DescriptorSecretKey(
+        network: network,
+        mnemonic: mnemonic,
+        password: null,
+      );
 
-    _persister = persister;
-    return wallet;
+      descriptor = bdk.Descriptor.newBip84(
+        secretKey: secretKey,
+        keychainKind: bdk.KeychainKind.external_,
+        network: network,
+      );
+      changeDescriptor = bdk.Descriptor.newBip84(
+        secretKey: secretKey,
+        keychainKind: bdk.KeychainKind.internal,
+        network: network,
+      );
+      final persister = bdk.Persister.newInMemory();
+      try {
+        final wallet = bdk.Wallet(
+          descriptor: descriptor,
+          changeDescriptor: changeDescriptor,
+          network: network,
+          persister: persister,
+          lookahead: lookahead,
+        );
+
+        _persister = persister;
+        return wallet;
+      } catch (_) {
+        persister.dispose();
+        rethrow;
+      }
+    } finally {
+      changeDescriptor?.dispose();
+      descriptor?.dispose();
+      secretKey?.dispose();
+      mnemonic.dispose();
+    }
   }
 
   bdk.Wallet _requireWallet() {

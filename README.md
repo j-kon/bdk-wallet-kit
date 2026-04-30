@@ -6,11 +6,20 @@ A Flutter-first companion toolkit built on top of `bdk-dart` for developers buil
 
 ## Current Status
 
-Early experimental foundation.
+`bdk_wallet_kit` is currently focused on real testnet/signet wallet flows.
 
 This package is experimental and should be used on testnet/signet while the BDK integration is being developed.
 
-The package structure, storage layer, sync state, balance/address models, basic widgets, and example Flutter app are in place. Real wallet operations are intentionally isolated behind the BDK adapter.
+The package is being developed around:
+
+- real wallet creation/restoration through `bdk-dart`
+- secure mnemonic storage
+- restoring wallet state from device storage
+- syncing through a configured backend
+- loading real wallet balance
+- generating real receive addresses
+
+Transaction sending is intentionally disabled until transaction building, signing, and broadcasting are wired properly through `bdk-dart`.
 
 ## Prerequisites
 
@@ -66,9 +75,8 @@ final kit = BdkWalletKit(
   storage: const SecureWalletStorage(),
 );
 
-await kit.createWallet(
-  mnemonic: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about',
-);
+final createdWallet = await kit.createNewWallet();
+// Show `createdWallet.mnemonic` once so the user can back it up.
 
 await kit.sync();
 final balance = await kit.getBalance();
@@ -81,7 +89,7 @@ BDK-specific types stay inside the adapter layer so the Flutter-facing package A
 
 ```dart
 WalletBalanceCard(
-  balance: WalletBalance(totalSats: 50000, spendableSats: 50000),
+  balance: balance,
 );
 
 ReceiveAddressCard(
@@ -95,14 +103,21 @@ SyncStatusBadge(
 
 ## Example App
 
-The `example/` app demonstrates:
+The `example/` app is a real testnet wallet example built on top of `bdk_wallet_kit` and `bdk-dart`.
 
-- `WalletKitConfig.testnet()`
-- `SecureWalletStorage`
-- `WalletBalanceCard`
-- `ReceiveAddressCard`
-- `SyncStatusBadge`
-- Safe UI messages for pending BDK integration
+The example app is not a mock demo. It is intended to be a real testnet wallet example using `bdk_wallet_kit` and `bdk-dart`.
+
+It demonstrates:
+
+- creating or restoring a testnet wallet
+- secure mnemonic storage
+- restoring wallet state from storage on app startup
+- syncing through the configured Esplora backend
+- loading real testnet balance
+- generating real testnet receive addresses
+- showing wallet state with reusable Flutter widgets
+
+Send transaction support is intentionally disabled until transaction building, signing, and broadcasting are wired through `bdk-dart`.
 
 Run it with:
 
