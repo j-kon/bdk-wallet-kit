@@ -18,8 +18,10 @@ The package is being developed around:
 - syncing through a configured backend
 - loading real wallet balance
 - generating real receive addresses
+- previewing real BDK-built transactions before broadcast
+- signing and broadcasting transactions through `bdk-dart`
 
-Transaction sending is intentionally disabled until transaction building, signing, and broadcasting are wired properly through `bdk-dart`.
+Transaction sending is early and testnet-focused. Review previews carefully and do not use mainnet funds.
 
 ## Prerequisites
 
@@ -81,6 +83,12 @@ final createdWallet = await kit.createNewWallet();
 await kit.sync();
 final balance = await kit.getBalance();
 final address = await kit.getReceiveAddress();
+
+final preview = await kit.previewSend(
+  recipientAddress: testnetRecipientAddress,
+  amountSats: 10_000,
+);
+final result = await kit.send(preview);
 ```
 
 BDK-specific types stay inside the adapter layer so the Flutter-facing package API remains focused on app-level wallet patterns.
@@ -115,9 +123,11 @@ It demonstrates:
 - syncing through the configured Esplora backend
 - loading real testnet balance
 - generating real testnet receive addresses
+- previewing real testnet sends with BDK fee calculation
+- signing and broadcasting real testnet transactions
 - showing wallet state with reusable Flutter widgets
 
-Send transaction support is intentionally disabled until transaction building, signing, and broadcasting are wired through `bdk-dart`.
+Send support is testnet-first and uses the adapter layer for BDK transaction building, signing, and broadcasting.
 
 Run it with:
 

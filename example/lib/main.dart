@@ -44,6 +44,8 @@ class _WalletKitExampleScreenState extends State<WalletKitExampleScreen> {
 
   WalletBalance? _balance;
   ReceiveAddress? _receiveAddress;
+  TransactionPreview? _transactionPreview;
+  TransactionResult? _transactionResult;
   String _message = 'Checking secure wallet storage...';
   bool _isInitializing = true;
   bool _isBusy = false;
@@ -114,7 +116,7 @@ class _WalletKitExampleScreenState extends State<WalletKitExampleScreen> {
 
   Future<void> _createWallet() {
     return _runWalletAction(() async {
-      final createdWallet = await _kit.createWallet();
+      final createdWallet = await _kit.createNewWallet();
       if (!mounted) {
         return;
       }
@@ -123,6 +125,8 @@ class _WalletKitExampleScreenState extends State<WalletKitExampleScreen> {
         _hasWallet = true;
         _balance = null;
         _receiveAddress = null;
+        _transactionPreview = null;
+        _transactionResult = null;
         _message = 'Wallet created. Back up your recovery phrase.';
       });
 
@@ -141,6 +145,8 @@ class _WalletKitExampleScreenState extends State<WalletKitExampleScreen> {
         _hasWallet = true;
         _balance = null;
         _receiveAddress = null;
+        _transactionPreview = null;
+        _transactionResult = null;
         _message = 'Wallet restored.';
       });
     });
@@ -158,6 +164,8 @@ class _WalletKitExampleScreenState extends State<WalletKitExampleScreen> {
       }
 
       setState(() {
+        _transactionPreview = null;
+        _transactionResult = null;
         _message = 'Wallet synced.';
       });
     });
@@ -187,6 +195,52 @@ class _WalletKitExampleScreenState extends State<WalletKitExampleScreen> {
       setState(() {
         _receiveAddress = address;
         _message = 'Receive address generated.';
+      });
+    });
+  }
+
+  Future<void> _previewSend({
+    required String recipientAddress,
+    required int amountSats,
+    required FeeRatePreset feeRatePreset,
+  }) {
+    setState(() {
+      _message = 'Preparing transaction preview...';
+    });
+
+    return _runWalletAction(() async {
+      final preview = await _kit.previewSend(
+        recipientAddress: recipientAddress,
+        amountSats: amountSats,
+        feeRatePreset: feeRatePreset,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _transactionPreview = preview;
+        _transactionResult = null;
+        _message = 'Transaction preview ready.';
+      });
+    });
+  }
+
+  Future<void> _sendTransaction(TransactionPreview preview) {
+    setState(() {
+      _message = 'Signing and broadcasting transaction...';
+    });
+
+    return _runWalletAction(() async {
+      final result = await _kit.send(preview);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _transactionPreview = null;
+        _transactionResult = result;
+        _message = 'Transaction broadcast.';
       });
     });
   }
@@ -230,6 +284,8 @@ class _WalletKitExampleScreenState extends State<WalletKitExampleScreen> {
         _hasWallet = false;
         _balance = null;
         _receiveAddress = null;
+        _transactionPreview = null;
+        _transactionResult = null;
         _message = 'Wallet deleted from this device.';
       });
     });
@@ -282,6 +338,8 @@ class _WalletKitExampleScreenState extends State<WalletKitExampleScreen> {
                     _WalletHomeSection(
                       balance: _balance,
                       receiveAddress: _receiveAddress,
+                      transactionPreview: _transactionPreview,
+                      transactionResult: _transactionResult,
                       message: _message,
                       isBusy: _isBusy,
                       syncState: syncState,
@@ -290,6 +348,8 @@ class _WalletKitExampleScreenState extends State<WalletKitExampleScreen> {
                       onGenerateReceiveAddress: _generateReceiveAddress,
                       onCopyReceiveAddress: _copyReceiveAddress,
                       onDeleteWallet: _deleteWallet,
+                      onPreviewSend: _previewSend,
+                      onSendTransaction: _sendTransaction,
                     )
                   else
                     _WalletSetupSection(
@@ -398,6 +458,8 @@ class _WalletSetupSection extends StatelessWidget {
 class _WalletHomeSection extends StatelessWidget {
   final WalletBalance? balance;
   final ReceiveAddress? receiveAddress;
+  final TransactionPreview? transactionPreview;
+  final TransactionResult? transactionResult;
   final String message;
   final bool isBusy;
   final WalletSyncState syncState;
@@ -406,10 +468,19 @@ class _WalletHomeSection extends StatelessWidget {
   final VoidCallback onGenerateReceiveAddress;
   final VoidCallback onCopyReceiveAddress;
   final VoidCallback onDeleteWallet;
+  final Future<void> Function({
+    required String recipientAddress,
+    required int amountSats,
+    required FeeRatePreset feeRatePreset,
+  })
+  onPreviewSend;
+  final Future<void> Function(TransactionPreview preview) onSendTransaction;
 
   const _WalletHomeSection({
     required this.balance,
     required this.receiveAddress,
+    required this.transactionPreview,
+    required this.transactionResult,
     required this.message,
     required this.isBusy,
     required this.syncState,
@@ -418,6 +489,8 @@ class _WalletHomeSection extends StatelessWidget {
     required this.onGenerateReceiveAddress,
     required this.onCopyReceiveAddress,
     required this.onDeleteWallet,
+    required this.onPreviewSend,
+    required this.onSendTransaction,
   });
 
   @override
@@ -478,7 +551,13 @@ class _WalletHomeSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        const _SendUnavailableCard(),
+        _SendTransactionCard(
+          isBusy: isBusy,
+          preview: transactionPreview,
+          result: transactionResult,
+          onPreviewSend: onPreviewSend,
+          onSendTransaction: onSendTransaction,
+        ),
       ],
     );
   }
@@ -536,17 +615,205 @@ class _EmptyBalanceCard extends StatelessWidget {
   }
 }
 
-class _SendUnavailableCard extends StatelessWidget {
-  const _SendUnavailableCard();
+class _SendTransactionCard extends StatefulWidget {
+  final bool isBusy;
+  final TransactionPreview? preview;
+  final TransactionResult? result;
+  final Future<void> Function({
+    required String recipientAddress,
+    required int amountSats,
+    required FeeRatePreset feeRatePreset,
+  })
+  onPreviewSend;
+  final Future<void> Function(TransactionPreview preview) onSendTransaction;
+
+  const _SendTransactionCard({
+    required this.isBusy,
+    required this.preview,
+    required this.result,
+    required this.onPreviewSend,
+    required this.onSendTransaction,
+  });
+
+  @override
+  State<_SendTransactionCard> createState() => _SendTransactionCardState();
+}
+
+class _SendTransactionCardState extends State<_SendTransactionCard> {
+  final _recipientController = TextEditingController();
+  final _amountController = TextEditingController();
+  FeeRatePreset _feeRatePreset = FeeRatePreset.normal;
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _recipientController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _previewSend() async {
+    final recipientAddress = _recipientController.text.trim();
+    final amountSats = int.tryParse(_amountController.text.trim());
+
+    if (recipientAddress.isEmpty) {
+      setState(() {
+        _errorText = 'Enter a testnet recipient address.';
+      });
+      return;
+    }
+
+    if (amountSats == null || amountSats <= 0) {
+      setState(() {
+        _errorText = 'Enter an amount greater than zero sats.';
+      });
+      return;
+    }
+
+    setState(() {
+      _errorText = null;
+    });
+
+    await widget.onPreviewSend(
+      recipientAddress: recipientAddress,
+      amountSats: amountSats,
+      feeRatePreset: _feeRatePreset,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final preview = widget.preview;
+    final result = widget.result;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Text(
-          'Send is coming later after real BDK transaction building, signing, and broadcasting are wired.',
-          style: Theme.of(context).textTheme.bodyMedium,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Send testnet bitcoin', style: textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              'Preview builds a real BDK transaction. Broadcast only after reviewing the fee and total.',
+              style: textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _recipientController,
+              enabled: !widget.isBusy,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Recipient address',
+              ),
+              minLines: 1,
+              maxLines: 3,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _amountController,
+              enabled: !widget.isBusy,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Amount sats',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<FeeRatePreset>(
+              initialValue: _feeRatePreset,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Fee preset',
+              ),
+              items: FeeRatePreset.values
+                  .where((preset) => preset != FeeRatePreset.custom)
+                  .map(
+                    (preset) => DropdownMenuItem(
+                      value: preset,
+                      child: Text(preset.name),
+                    ),
+                  )
+                  .toList(),
+              onChanged: widget.isBusy
+                  ? null
+                  : (preset) {
+                      if (preset != null) {
+                        setState(() {
+                          _feeRatePreset = preset;
+                        });
+                      }
+                    },
+            ),
+            if (_errorText != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _errorText!,
+                style: textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: widget.isBusy ? null : _previewSend,
+              icon: const Icon(Icons.receipt_long_outlined),
+              label: const Text('Preview transaction'),
+            ),
+            if (preview != null) ...[
+              const SizedBox(height: 12),
+              _TransactionPreviewDetails(preview: preview),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: widget.isBusy
+                    ? null
+                    : () => widget.onSendTransaction(preview),
+                icon: const Icon(Icons.send_outlined),
+                label: const Text('Broadcast transaction'),
+              ),
+            ],
+            if (result != null) ...[
+              const SizedBox(height: 12),
+              SelectableText(
+                'Broadcast transaction ID: ${result.txid}',
+                style: textTheme.bodyMedium,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TransactionPreviewDetails extends StatelessWidget {
+  final TransactionPreview preview;
+
+  const _TransactionPreviewDetails({required this.preview});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Transaction preview', style: textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Text('Amount: ${preview.amountSats} sats'),
+            Text('Estimated fee: ${preview.estimatedFeeSats} sats'),
+            Text('Total: ${preview.totalSats} sats'),
+            Text('Fee preset: ${preview.feeRatePreset.name}'),
+          ],
         ),
       ),
     );

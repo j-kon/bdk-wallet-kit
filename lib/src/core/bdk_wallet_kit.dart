@@ -83,9 +83,12 @@ class BdkWalletKit {
 
   Future<void> deleteWallet() async {
     await storage.deleteMnemonic();
-    await bdk.reset();
-    _hasWallet = false;
-    _syncState = WalletSyncState.idle();
+    try {
+      await bdk.reset();
+    } finally {
+      _hasWallet = false;
+      _syncState = WalletSyncState.idle();
+    }
   }
 
   Future<void> sync() async {

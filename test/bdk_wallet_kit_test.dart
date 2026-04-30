@@ -11,8 +11,10 @@ class FakeBdkWalletAdapter extends BdkWalletAdapter {
   bool syncCalled = false;
   bool failSync = false;
   bool resetCalled = false;
+  bool sendCalled = false;
   String? createdMnemonic;
   String? restoredMnemonic;
+  TransactionPreview? sentPreview;
 
   FakeBdkWalletAdapter({required this.config});
 
@@ -76,8 +78,14 @@ class FakeBdkWalletAdapter extends BdkWalletAdapter {
   }
 
   @override
-  Future<TransactionResult> send(TransactionPreview preview) {
-    throw UnimplementedError('fake send is intentionally unavailable');
+  Future<TransactionResult> send(TransactionPreview preview) async {
+    sendCalled = true;
+    sentPreview = preview;
+    return TransactionResult(
+      txid: '4d3c2b1a',
+      broadcasted: true,
+      createdAt: DateTime.utc(2026),
+    );
   }
 }
 
@@ -309,6 +317,31 @@ void main() {
 
       expect(preview.estimatedFeeSats, 1000);
       expect(preview.totalSats, 11000);
+    });
+
+    test('delegates transaction send to adapter', () async {
+      final config = WalletKitConfig.testnet();
+      final adapter = FakeBdkWalletAdapter(config: config);
+      final kit = BdkWalletKit(
+        config: config,
+        storage: MemoryWalletStorage(),
+        bdkAdapter: adapter,
+      );
+
+      await kit.createWallet(
+        mnemonic:
+            'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+      );
+      final preview = await kit.previewSend(
+        recipientAddress: 'tb1qexample',
+        amountSats: 10000,
+      );
+      final result = await kit.send(preview);
+
+      expect(adapter.sendCalled, isTrue);
+      expect(adapter.sentPreview, same(preview));
+      expect(result.broadcasted, isTrue);
+      expect(result.txid, '4d3c2b1a');
     });
 
     test('wallet operations throw clearly before create or restore', () async {
